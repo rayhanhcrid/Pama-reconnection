@@ -993,6 +993,33 @@
 
   let participantData = { name:'', role:'', site:'' };
 
+  /* ================= SUPABASE : REKAM PESERTA ================= */
+  const SUPABASE_URL = 'https://xapvrcotgffdcadambri.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_dvo3rTleRQXo68w37D2glQ_4CS0-NZK';
+
+  let lastRecorded = '';
+
+  /* Kirim data diri ke Supabase. Sengaja fire-and-forget:
+     kalau peserta offline atau request gagal, alur halaman tetap jalan. */
+  function recordParticipant(data){
+    const sig = data.name + '|' + data.role + '|' + data.site;
+    if(sig === lastRecorded) return;   // hindari duplikat saat bolak-balik section
+    lastRecorded = sig;
+
+    fetch(SUPABASE_URL + '/rest/v1/pama_participants', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ name: data.name, role: data.role, site: data.site })
+    }).catch(function(){
+      lastRecorded = '';   // biar bisa dicoba lagi nanti
+    });
+  }
+
   function goToRecap(){
     const nameEl = document.getElementById('pd-name');
     const roleEl = document.getElementById('pd-role');
@@ -1010,6 +1037,7 @@
     note.textContent = '';
 
     participantData = { name, role, site };
+    recordParticipant(participantData);
 
     const chip = document.getElementById('pd-summary-chip');
     chip.style.display = 'inline-flex';

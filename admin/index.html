@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin — Reconnection | PAMA x HCR.ID</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#253C7F;
+    --navy-dark:#182959;
+    --ice:#D7E1F5;
+    --gold:#F8C301;
+    --gold-dark:#C99A00;
+    --slate:#4A5568;
+    --slate-light:#8A94A6;
+    --offwhite:#F5F7FC;
+    --line:#E4E8F2;
+    --text-dark:#1B2340;
+    --green:#2E7D5B;
+    --danger:#B3261E;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--offwhite);
+    color:var(--text-dark);
+    font-family:'Montserrat', sans-serif;
+    font-weight:500;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-weight:900; margin:0; color:var(--navy);}
+  .hidden{display:none !important;}
+
+  /* ---------- LOGIN ---------- */
+  .login-wrap{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .login-card{
+    width:100%; max-width:400px; background:#fff; border:1px solid var(--line);
+    border-radius:16px; padding:36px 32px; box-shadow:0 12px 40px rgba(37,60,127,.10);
+  }
+  .eyebrow{
+    font-size:11px; font-weight:800; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--gold-dark); margin-bottom:10px;
+  }
+  .login-card h1{font-size:24px; margin-bottom:6px;}
+  .login-sub{font-size:13px; color:var(--slate-light); margin:0 0 26px;}
+  label{
+    display:block; font-size:11px; font-weight:800; letter-spacing:.09em;
+    text-transform:uppercase; color:var(--slate); margin-bottom:7px;
+  }
+  input{
+    width:100%; padding:12px 14px; border:1.5px solid var(--line); border-radius:10px;
+    font-family:inherit; font-size:14px; font-weight:600; color:var(--text-dark);
+    background:#fff; transition:border-color .15s;
+  }
+  input:focus{outline:none; border-color:var(--navy);}
+  .field{margin-bottom:18px;}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:12px 20px; border:none; border-radius:10px; cursor:pointer;
+    font-family:inherit; font-size:14px; font-weight:800; letter-spacing:.01em;
+    transition:transform .12s, box-shadow .12s, background .15s;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--navy); color:#fff; width:100%;}
+  .btn-primary:hover{background:var(--navy-dark);}
+  .btn-primary:disabled{background:var(--slate-light); cursor:not-allowed;}
+  .btn-ghost{
+    background:#fff; color:var(--navy); border:1.5px solid var(--line); padding:9px 16px; font-size:13px;
+  }
+  .btn-ghost:hover{border-color:var(--navy);}
+  .msg{
+    margin-top:16px; padding:11px 14px; border-radius:9px; font-size:12.5px; font-weight:600;
+    display:none;
+  }
+  .msg.show{display:block;}
+  .msg.err{background:#FDECEA; color:var(--danger); border:1px solid #F5C6C2;}
+  .msg.ok{background:#E8F5EE; color:var(--green); border:1px solid #BFE3D0;}
+
+  /* ---------- DASHBOARD ---------- */
+  .topbar{
+    background:var(--navy); color:#fff; padding:18px 28px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  .topbar h1{color:#fff; font-size:18px; letter-spacing:.01em;}
+  .topbar .tb-sub{font-size:11.5px; color:var(--ice); font-weight:600; letter-spacing:.05em;}
+  .tb-right{display:flex; align-items:center; gap:12px;}
+  .tb-user{font-size:12px; color:var(--ice); font-weight:600;}
+  .btn-logout{
+    background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.25);
+    padding:8px 15px; font-size:12.5px;
+  }
+  .btn-logout:hover{background:rgba(255,255,255,.2);}
+
+  .container{max-width:1080px; margin:0 auto; padding:28px 24px 60px;}
+
+  .stats{display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:14px; margin-bottom:24px;}
+  .stat{
+    background:#fff; border:1px solid var(--line); border-radius:13px; padding:18px 20px;
+    border-left:4px solid var(--gold);
+  }
+  .stat-label{
+    font-size:10.5px; font-weight:800; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--slate-light); margin-bottom:5px;
+  }
+  .stat-value{font-size:28px; font-weight:900; color:var(--navy); line-height:1.15;}
+
+  .toolbar{display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; align-items:center;}
+  .search{flex:1; min-width:220px;}
+  .search input{padding:10px 14px; font-size:13.5px; font-weight:600;}
+
+  .table-card{background:#fff; border:1px solid var(--line); border-radius:13px; overflow:hidden;}
+  .table-scroll{overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  thead th{
+    background:var(--offwhite); text-align:left; padding:13px 16px;
+    font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--slate); border-bottom:1.5px solid var(--line); white-space:nowrap;
+  }
+  tbody td{padding:13px 16px; border-bottom:1px solid var(--line); font-weight:600;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#FAFBFE;}
+  td.num{color:var(--slate-light); font-weight:700; width:52px;}
+  td.name{font-weight:800; color:var(--navy);}
+  td.time{color:var(--slate); white-space:nowrap; font-size:12.5px;}
+  .empty{padding:52px 24px; text-align:center; color:var(--slate-light); font-size:13.5px; font-weight:600;}
+
+  @media (max-width:600px){
+    .topbar{padding:14px 18px;}
+    .container{padding:20px 16px 48px;}
+    .stat-value{font-size:24px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div class="login-wrap" id="view-login">
+  <div class="login-card">
+    <div class="eyebrow">Area Terbatas</div>
+    <h1>Admin Panel</h1>
+    <p class="login-sub">Reconnection — Adaptive Leadership Program</p>
+
+    <form id="login-form" autocomplete="on">
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" required autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary" id="btn-login">Masuk</button>
+    </form>
+    <div class="msg err" id="login-msg"></div>
+  </div>
+</div>
+
+<!-- ================= DASHBOARD ================= -->
+<div class="hidden" id="view-dash">
+  <div class="topbar">
+    <div>
+      <h1>Data Peserta</h1>
+      <div class="tb-sub">RECONNECTION — PAMA x HCR.ID</div>
+    </div>
+    <div class="tb-right">
+      <span class="tb-user" id="who"></span>
+      <button class="btn btn-logout" id="btn-logout">Keluar</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Total Peserta</div>
+        <div class="stat-value" id="stat-total">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Hari Ini</div>
+        <div class="stat-value" id="stat-today">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Jumlah Site</div>
+        <div class="stat-value" id="stat-site">—</div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search">
+        <input type="search" id="q" placeholder="Cari nama, jabatan, atau site…">
+      </div>
+      <button class="btn btn-ghost" id="btn-refresh">Muat Ulang</button>
+      <button class="btn btn-ghost" id="btn-csv">Unduh CSV</button>
+    </div>
+
+    <div class="msg err" id="dash-msg"></div>
+
+    <div class="table-card">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nama Lengkap</th>
+              <th>Jabatan</th>
+              <th>Site</th>
+              <th>Waktu Isi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="empty hidden" id="empty">Belum ada peserta yang mengisi data diri.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPA_URL = 'https://xapvrcotgffdcadambri.supabase.co';
+  const SUPA_KEY = 'sb_publishable_dvo3rTleRQXo68w37D2glQ_4CS0-NZK';
+  const SESSION_KEY = 'pama_admin_session';
+
+  let rows = [];
+
+  function $(id){ return document.getElementById(id); }
+
+  /* ---------- SESSION ---------- */
+  function saveSession(j){
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+      access_token: j.access_token,
+      refresh_token: j.refresh_token,
+      email: (j.user && j.user.email) || (getSession() || {}).email || '',
+      expires_at: Math.floor(Date.now()/1000) + (j.expires_in || 3600)
+    }));
+  }
+  function getSession(){
+    try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); }
+    catch(e){ return null; }
+  }
+  function clearSession(){ sessionStorage.removeItem(SESSION_KEY); }
+
+  async function refreshSession(){
+    const s = getSession();
+    if(!s || !s.refresh_token) throw new Error('Sesi berakhir, silakan masuk lagi.');
+    const r = await fetch(SUPA_URL + '/auth/v1/token?grant_type=refresh_token', {
+      method:'POST',
+      headers:{ 'apikey': SUPA_KEY, 'Content-Type':'application/json' },
+      body: JSON.stringify({ refresh_token: s.refresh_token })
+    });
+    const j = await r.json();
+    if(!r.ok) throw new Error('Sesi berakhir, silakan masuk lagi.');
+    saveSession(j);
+  }
+
+  /* Panggil REST API pakai token admin; sekali retry kalau token kedaluwarsa. */
+  async function api(path, opts, isRetry){
+    const s = getSession();
+    if(!s) throw new Error('Sesi berakhir, silakan masuk lagi.');
+    const o = opts || {};
+    const r = await fetch(SUPA_URL + path, {
+      method: o.method || 'GET',
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': 'Bearer ' + s.access_token,
+        'Content-Type': 'application/json'
+      },
+      body: o.body
+    });
+    if(r.status === 401 && !isRetry){
+      await refreshSession();
+      return api(path, opts, true);
+    }
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }
+
+  /* ---------- LOGIN ---------- */
+  $('login-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const btn = $('btn-login');
+    const msg = $('login-msg');
+    msg.classList.remove('show');
+    btn.disabled = true;
+    btn.textContent = 'Memeriksa…';
+
+    try{
+      const r = await fetch(SUPA_URL + '/auth/v1/token?grant_type=password', {
+        method:'POST',
+        headers:{ 'apikey': SUPA_KEY, 'Content-Type':'application/json' },
+        body: JSON.stringify({ email: $('email').value.trim(), password: $('password').value })
+      });
+      const j = await r.json();
+      if(!r.ok){
+        throw new Error(j.error_description || j.msg || j.error || 'Email atau password salah.');
+      }
+      saveSession(j);
+      await enterDashboard();
+    }catch(err){
+      msg.textContent = err.message === 'Invalid login credentials'
+        ? 'Email atau password salah.'
+        : err.message;
+      msg.classList.add('show');
+    }finally{
+      btn.disabled = false;
+      btn.textContent = 'Masuk';
+    }
+  });
+
+  $('btn-logout').addEventListener('click', function(){
+    clearSession();
+    $('view-dash').classList.add('hidden');
+    $('view-login').classList.remove('hidden');
+    $('password').value = '';
+  });
+
+  /* ---------- DASHBOARD ---------- */
+  async function enterDashboard(){
+    /* Cek apakah akun ini benar-benar terdaftar sebagai admin.
+       Tanpa ini, akun non-admin cuma lihat tabel kosong tanpa penjelasan. */
+    let isAdmin = false;
+    try{
+      isAdmin = await api('/rest/v1/rpc/is_pama_admin', { method:'POST', body:'{}' });
+    }catch(e){ /* diperlakukan sebagai bukan admin */ }
+
+    if(!isAdmin){
+      clearSession();
+      $('view-dash').classList.add('hidden');
+      $('view-login').classList.remove('hidden');
+      const msg = $('login-msg');
+      msg.textContent = 'Akun ini valid, tapi belum terdaftar sebagai admin.';
+      msg.classList.add('show');
+      return;
+    }
+
+    $('who').textContent = (getSession() || {}).email || '';
+    $('view-login').classList.add('hidden');
+    $('view-dash').classList.remove('hidden');
+    await loadRows();
+  }
+
+  async function loadRows(){
+    const msg = $('dash-msg');
+    msg.classList.remove('show');
+    try{
+      rows = await api('/rest/v1/pama_participants?select=*&order=created_at.desc');
+      render();
+    }catch(err){
+      msg.textContent = 'Gagal memuat data: ' + err.message;
+      msg.classList.add('show');
+    }
+  }
+
+  const fmtFull = new Intl.DateTimeFormat('id-ID', {
+    timeZone:'Asia/Jakarta', day:'numeric', month:'short', year:'numeric',
+    hour:'2-digit', minute:'2-digit'
+  });
+  /* en-CA memberi format YYYY-MM-DD, dipakai untuk membandingkan tanggal di zona Jakarta */
+  const fmtDay = new Intl.DateTimeFormat('en-CA', { timeZone:'Asia/Jakarta' });
+
+  function esc(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+
+  function render(){
+    const q = $('q').value.trim().toLowerCase();
+    const list = q
+      ? rows.filter(function(r){
+          return (r.name + ' ' + r.role + ' ' + r.site).toLowerCase().indexOf(q) !== -1;
+        })
+      : rows;
+
+    const today = fmtDay.format(new Date());
+    $('stat-total').textContent = rows.length;
+    $('stat-today').textContent = rows.filter(function(r){
+      return fmtDay.format(new Date(r.created_at)) === today;
+    }).length;
+    $('stat-site').textContent = new Set(rows.map(function(r){
+      return r.site.trim().toLowerCase();
+    })).size;
+
+    $('tbody').innerHTML = list.map(function(r, i){
+      return '<tr>'
+        + '<td class="num">' + (i + 1) + '</td>'
+        + '<td class="name">' + esc(r.name) + '</td>'
+        + '<td>' + esc(r.role) + '</td>'
+        + '<td>' + esc(r.site) + '</td>'
+        + '<td class="time">' + fmtFull.format(new Date(r.created_at)) + ' WIB</td>'
+        + '</tr>';
+    }).join('');
+
+    $('empty').classList.toggle('hidden', list.length > 0);
+    $('empty').textContent = rows.length === 0
+      ? 'Belum ada peserta yang mengisi data diri.'
+      : 'Tidak ada hasil untuk pencarian ini.';
+  }
+
+  $('q').addEventListener('input', render);
+  $('btn-refresh').addEventListener('click', loadRows);
+
+  $('btn-csv').addEventListener('click', function(){
+    function cell(v){ return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }
+    const lines = [['No','Nama Lengkap','Jabatan','Site','Waktu Isi (WIB)'].map(cell).join(',')];
+    rows.forEach(function(r, i){
+      lines.push([i + 1, r.name, r.role, r.site, fmtFull.format(new Date(r.created_at))].map(cell).join(','));
+    });
+    /* BOM di depan supaya huruf beraksen tampil benar saat dibuka di Excel */
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type:'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'peserta-reconnection-' + fmtDay.format(new Date()) + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  /* Auto-masuk kalau sesi masih hidup (mis. setelah refresh halaman) */
+  (function(){
+    const s = getSession();
+    if(s && s.expires_at > Math.floor(Date.now()/1000) + 60){
+      enterDashboard();
+    }else if(s){
+      clearSession();
+    }
+  })();
+</script>
+</body>
+</html>
