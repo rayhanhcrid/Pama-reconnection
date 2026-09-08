@@ -35,12 +35,12 @@
   h1,h2,h3{font-weight:900; margin:0; color:var(--navy);}
   .hidden{display:none !important;}
 
-  /* ---------- LOGIN ---------- */
+  /* ---------- GERBANG KODE ---------- */
   .login-wrap{
     min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
   }
   .login-card{
-    width:100%; max-width:400px; background:#fff; border:1px solid var(--line);
+    width:100%; max-width:380px; background:#fff; border:1px solid var(--line);
     border-radius:16px; padding:36px 32px; box-shadow:0 12px 40px rgba(37,60,127,.10);
   }
   .eyebrow{
@@ -59,12 +59,16 @@
     background:#fff; transition:border-color .15s;
   }
   input:focus{outline:none; border-color:var(--navy);}
+  #code{
+    text-align:center; font-size:22px; font-weight:800; letter-spacing:.35em;
+    padding:14px; text-indent:.35em;
+  }
   .field{margin-bottom:18px;}
   .btn{
     display:inline-flex; align-items:center; justify-content:center; gap:8px;
     padding:12px 20px; border:none; border-radius:10px; cursor:pointer;
     font-family:inherit; font-size:14px; font-weight:800; letter-spacing:.01em;
-    transition:transform .12s, box-shadow .12s, background .15s;
+    transition:transform .12s, background .15s, border-color .15s;
   }
   .btn:active{transform:translateY(1px);}
   .btn-primary{background:var(--navy); color:#fff; width:100%;}
@@ -80,7 +84,6 @@
   }
   .msg.show{display:block;}
   .msg.err{background:#FDECEA; color:var(--danger); border:1px solid #F5C6C2;}
-  .msg.ok{background:#E8F5EE; color:var(--green); border:1px solid #BFE3D0;}
 
   /* ---------- DASHBOARD ---------- */
   .topbar{
@@ -89,8 +92,6 @@
   }
   .topbar h1{color:#fff; font-size:18px; letter-spacing:.01em;}
   .topbar .tb-sub{font-size:11.5px; color:var(--ice); font-weight:600; letter-spacing:.05em;}
-  .tb-right{display:flex; align-items:center; gap:12px;}
-  .tb-user{font-size:12px; color:var(--ice); font-weight:600;}
   .btn-logout{
     background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.25);
     padding:8px 15px; font-size:12.5px;
@@ -139,23 +140,20 @@
 </head>
 <body>
 
-<!-- ================= LOGIN ================= -->
+<!-- ================= GERBANG KODE ================= -->
 <div class="login-wrap" id="view-login">
   <div class="login-card">
     <div class="eyebrow">Area Terbatas</div>
     <h1>Admin Panel</h1>
     <p class="login-sub">Reconnection — Adaptive Leadership Program</p>
 
-    <form id="login-form" autocomplete="on">
+    <form id="code-form" autocomplete="off">
       <div class="field">
-        <label for="email">Email</label>
-        <input type="email" id="email" required autocomplete="username">
+        <label for="code">Kode Akses</label>
+        <input type="password" id="code" required autocomplete="off"
+               inputmode="numeric" autofocus>
       </div>
-      <div class="field">
-        <label for="password">Password</label>
-        <input type="password" id="password" required autocomplete="current-password">
-      </div>
-      <button type="submit" class="btn btn-primary" id="btn-login">Masuk</button>
+      <button type="submit" class="btn btn-primary" id="btn-enter">Masuk</button>
     </form>
     <div class="msg err" id="login-msg"></div>
   </div>
@@ -168,10 +166,7 @@
       <h1>Data Peserta</h1>
       <div class="tb-sub">RECONNECTION — PAMA x HCR.ID</div>
     </div>
-    <div class="tb-right">
-      <span class="tb-user" id="who"></span>
-      <button class="btn btn-logout" id="btn-logout">Keluar</button>
-    </div>
+    <button class="btn btn-logout" id="btn-logout">Keluar</button>
   </div>
 
   <div class="container">
@@ -221,90 +216,50 @@
 </div>
 
 <script>
-  const SUPA_URL = 'https://xapvrcotgffdcadambri.supabase.co';
-  const SUPA_KEY = 'sb_publishable_dvo3rTleRQXo68w37D2glQ_4CS0-NZK';
-  const SESSION_KEY = 'pama_admin_session';
+  /* Halaman ini tidak memegang kunci apa pun ke database.
+     Satu-satunya jalan ke data adalah Edge Function di bawah, yang baru
+     mengeluarkan data setelah kode akses dicocokkan di sisi server. */
+  const FN_URL = 'https://xapvrcotgffdcadambri.supabase.co/functions/v1/pama-admin';
+  const CODE_KEY = 'pama_admin_code';
 
   let rows = [];
 
   function $(id){ return document.getElementById(id); }
 
-  /* ---------- SESSION ---------- */
-  function saveSession(j){
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
-      access_token: j.access_token,
-      refresh_token: j.refresh_token,
-      email: (j.user && j.user.email) || (getSession() || {}).email || '',
-      expires_at: Math.floor(Date.now()/1000) + (j.expires_in || 3600)
-    }));
-  }
-  function getSession(){
-    try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); }
-    catch(e){ return null; }
-  }
-  function clearSession(){ sessionStorage.removeItem(SESSION_KEY); }
-
-  async function refreshSession(){
-    const s = getSession();
-    if(!s || !s.refresh_token) throw new Error('Sesi berakhir, silakan masuk lagi.');
-    const r = await fetch(SUPA_URL + '/auth/v1/token?grant_type=refresh_token', {
-      method:'POST',
-      headers:{ 'apikey': SUPA_KEY, 'Content-Type':'application/json' },
-      body: JSON.stringify({ refresh_token: s.refresh_token })
+  /* Ambil data peserta dengan kode. Melempar Error berisi pesan dari server. */
+  async function fetchParticipants(code){
+    const r = await fetch(FN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code })
     });
-    const j = await r.json();
-    if(!r.ok) throw new Error('Sesi berakhir, silakan masuk lagi.');
-    saveSession(j);
+    const j = await r.json().catch(function(){ return {}; });
+    if(!r.ok) throw new Error(j.error || ('Gagal terhubung (HTTP ' + r.status + ')'));
+    return j.participants || [];
   }
 
-  /* Panggil REST API pakai token admin; sekali retry kalau token kedaluwarsa. */
-  async function api(path, opts, isRetry){
-    const s = getSession();
-    if(!s) throw new Error('Sesi berakhir, silakan masuk lagi.');
-    const o = opts || {};
-    const r = await fetch(SUPA_URL + path, {
-      method: o.method || 'GET',
-      headers: {
-        'apikey': SUPA_KEY,
-        'Authorization': 'Bearer ' + s.access_token,
-        'Content-Type': 'application/json'
-      },
-      body: o.body
-    });
-    if(r.status === 401 && !isRetry){
-      await refreshSession();
-      return api(path, opts, true);
-    }
-    if(!r.ok) throw new Error('HTTP ' + r.status);
-    return r.json();
-  }
-
-  /* ---------- LOGIN ---------- */
-  $('login-form').addEventListener('submit', async function(e){
+  /* ---------- GERBANG KODE ---------- */
+  $('code-form').addEventListener('submit', async function(e){
     e.preventDefault();
-    const btn = $('btn-login');
+    const btn = $('btn-enter');
     const msg = $('login-msg');
+    const code = $('code').value.trim();
+
     msg.classList.remove('show');
     btn.disabled = true;
     btn.textContent = 'Memeriksa…';
 
     try{
-      const r = await fetch(SUPA_URL + '/auth/v1/token?grant_type=password', {
-        method:'POST',
-        headers:{ 'apikey': SUPA_KEY, 'Content-Type':'application/json' },
-        body: JSON.stringify({ email: $('email').value.trim(), password: $('password').value })
-      });
-      const j = await r.json();
-      if(!r.ok){
-        throw new Error(j.error_description || j.msg || j.error || 'Email atau password salah.');
-      }
-      saveSession(j);
-      await enterDashboard();
+      rows = await fetchParticipants(code);
+      sessionStorage.setItem(CODE_KEY, code);
+      $('code').value = '';
+      $('view-login').classList.add('hidden');
+      $('view-dash').classList.remove('hidden');
+      render();
     }catch(err){
-      msg.textContent = err.message === 'Invalid login credentials'
-        ? 'Email atau password salah.'
-        : err.message;
+      msg.textContent = err.message;
       msg.classList.add('show');
+      $('code').select();
     }finally{
       btn.disabled = false;
       btn.textContent = 'Masuk';
@@ -312,45 +267,23 @@
   });
 
   $('btn-logout').addEventListener('click', function(){
-    clearSession();
+    sessionStorage.removeItem(CODE_KEY);
+    rows = [];
     $('view-dash').classList.add('hidden');
     $('view-login').classList.remove('hidden');
-    $('password').value = '';
+    $('login-msg').classList.remove('show');
+    $('code').focus();
   });
 
   /* ---------- DASHBOARD ---------- */
-  async function enterDashboard(){
-    /* Cek apakah akun ini benar-benar terdaftar sebagai admin.
-       Tanpa ini, akun non-admin cuma lihat tabel kosong tanpa penjelasan. */
-    let isAdmin = false;
-    try{
-      isAdmin = await api('/rest/v1/rpc/is_pama_admin', { method:'POST', body:'{}' });
-    }catch(e){ /* diperlakukan sebagai bukan admin */ }
-
-    if(!isAdmin){
-      clearSession();
-      $('view-dash').classList.add('hidden');
-      $('view-login').classList.remove('hidden');
-      const msg = $('login-msg');
-      msg.textContent = 'Akun ini valid, tapi belum terdaftar sebagai admin.';
-      msg.classList.add('show');
-      return;
-    }
-
-    $('who').textContent = (getSession() || {}).email || '';
-    $('view-login').classList.add('hidden');
-    $('view-dash').classList.remove('hidden');
-    await loadRows();
-  }
-
   async function loadRows(){
     const msg = $('dash-msg');
     msg.classList.remove('show');
     try{
-      rows = await api('/rest/v1/pama_participants?select=*&order=created_at.desc');
+      rows = await fetchParticipants(sessionStorage.getItem(CODE_KEY) || '');
       render();
     }catch(err){
-      msg.textContent = 'Gagal memuat data: ' + err.message;
+      msg.textContent = err.message;
       msg.classList.add('show');
     }
   }
@@ -419,14 +352,18 @@
     URL.revokeObjectURL(a.href);
   });
 
-  /* Auto-masuk kalau sesi masih hidup (mis. setelah refresh halaman) */
+  /* Kalau kode masih tersimpan di tab ini, langsung masuk (mis. setelah refresh) */
   (function(){
-    const s = getSession();
-    if(s && s.expires_at > Math.floor(Date.now()/1000) + 60){
-      enterDashboard();
-    }else if(s){
-      clearSession();
-    }
+    const saved = sessionStorage.getItem(CODE_KEY);
+    if(!saved) return;
+    fetchParticipants(saved).then(function(data){
+      rows = data;
+      $('view-login').classList.add('hidden');
+      $('view-dash').classList.remove('hidden');
+      render();
+    }).catch(function(){
+      sessionStorage.removeItem(CODE_KEY);   // kode sudah diganti / diblokir
+    });
   })();
 </script>
 </body>
